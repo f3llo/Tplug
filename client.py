@@ -1,84 +1,88 @@
 import socket
-import threading
+from tkinter import *
 import tkinter as tk
-import keyboard
-
-root = tk.Tk()
-
-def show_entry_fields():
-    print("Username: %s\nPort: %s" % (e1.get(), e2.get()))
-    global NAME 
-    NAME = e1.get()
-    global PORT
-    PORT = e2.get()
-    PORT = int(PORT)
-
-tk.Label(root, text="Username").grid(row=0)
-tk.Label(root, text="Port").grid(row=1)
-
-e1 = tk.Entry(root)
-e2 = tk.Entry(root)
-
-e1.grid(row=0, column=1)
-e2.grid(row=1, column=1)
-
-def destroy():
-    root.destroy
-
-b1 = tk.Button(root, text='submit', command=lambda:[destroy(), show_entry_fields()])
-b1.grid(row=3, column=1, sticky=tk.W,pady=4)
-b2 = tk.Button(root, text='Done', command=root.destroy)
-b2.grid(row=4, column=0)
-
-
-root.mainloop()
-
-
+import time
 
 HEADER = 64
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 SERVER = socket.gethostbyname(socket.gethostname())
-ADDR = (SERVER, PORT)
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
+root = tk.Tk()
+root.geometry("250x200")
+
+lb1 = Label(root, text="Port")
+lb1.grid(row=0, column=0)
+lb2 = Label(root, text="Username")
+lb2.grid(row=1, column=0)
+
+e1 = Entry(root)
+e1.grid(row=0, column=1)
+
+e2 = Entry(root)
+e2.grid(row=1, column=1)
+
+
+def get_entry():
+    global PORT
+    PORT = int(e1.get())
+    global NAME
+    NAME = e2.get()
+
+
+def connect():
+    global client
+    ADDR = (SERVER, PORT)
+    print(type(ADDR))
+
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print(client)
+    client.connect(ADDR) 
 
 
 def send(name, msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
-    send_length += b' ' * (HEADER - len(send_length))
+    send_length += b'' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
+
+
     print(client.recv(2048).decode(FORMAT))
+    received = client.recv(2048).decode(FORMAT)
+    text.insert(END, received + "\n")
 
 
-connected = True
-window = tk.Tk()
+def send_input(event):
+    msg = e3.get()
+    e3.delete(0, END)
+    send(NAME, msg)
 
-label = tk.Label(window, text=f"Connected to: {PORT}")
-label.grid(row=2, column=2)
-
-#b1 = tk.Button(window, text="DISCONNECT", command=send("", DISCONNECT_MESSAGE))
-#b1.grid(row=0,column=0)
-
-messages = []
-
-e1 = tk.Entry(window)
-e1.grid(row=1,column=0)
-while connected:
-    if keyboard.is_pressed("q"):
-        message = e1.get()
-        messages.append(message)
-        send(NAME, message)
-        break
-
-#while connected:
-    #send(NAME, NAME)
-    #send(f"[CLIENT{NAME}]", input(f"[SELF: {NAME}]"))
+btn1 = Button(root, text="Get data", command=get_entry)
+btn2 = Button(root, text="Connect", command=connect)
 
 
+btn1.grid(row=2, column=1)
+btn2.grid(row=3, column=1)
 
-window.mainloop()
+
+new_window = tk.Toplevel(root)
+new_window.title("Chat")
+new_window.geometry("200x200")
+
+text = Text(new_window, height=10, width=20)
+text.grid(row=0,column=0)
+
+scroll = Scrollbar(new_window)
+scroll.grid(row=0, column=1, sticky="ns")
+text.config(yscrollcommand=scroll.set)
+scroll.config(command=text.yview)
+
+
+e3 = Entry(new_window)
+e3.grid(row=1,column=0, sticky=W)
+
+e3.bind('<Return>', send_input)
+
+root.mainloop()
